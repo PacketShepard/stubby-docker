@@ -1,15 +1,14 @@
-FROM debian:bullseye as openssl
-LABEL maintainer="Matthew Vance"
+FROM debian:bookworm as openssl
 
-ENV VERSION_OPENSSL=openssl-3.0.1 \
-    SHA256_OPENSSL=c311ad853353bce796edad01a862c50a8a587f62e7e2100ef465ab53ec9b06d1 \
+ENV VERSION_OPENSSL=openssl-3.0.13 \
+    SHA256_OPENSSL=88525753f79d3bec27d2fa7c66aa0b92b3aa9498dafd93d7cfa4b3780cdae313 \
     SOURCE_OPENSSL=https://www.openssl.org/source/ \
-    OPGP_OPENSSL=8657ABB260F056B1E5190839D9C4D26D0E604491
+    OPGP_OPENSSL=EFC0A467D613CB83C7ED6D30D894E2CE8B3D79F5
 
 WORKDIR /tmp/src
 
 RUN set -e -x && \
-    build_deps="build-essential ca-certificates curl dirmngr gnupg libidn2-0-dev libssl-dev" && \
+    build_deps="build-essential ca-certificates curl dirmngr gnupg libidn2-dev libssl-dev" && \
     DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
       $build_deps && \
     curl -L $SOURCE_OPENSSL$VERSION_OPENSSL.tar.gz -o openssl.tar.gz && \
@@ -33,21 +32,15 @@ RUN set -e -x && \
       -fstack-protector-strong && \
     make depend && \
     make && \
-    make install_sw && \
-    apt-get purge -y --auto-remove \
-      $build_deps && \
-    rm -rf \
-        /tmp/* \
-        /var/tmp/* \
-        /var/lib/apt/lists/*
+    make install_sw
 
-FROM debian:bullseye as unbound
+FROM debian:bookworm as unbound
 LABEL maintainer="Matthew Vance"
 
 ENV NAME=unbound \
-    UNBOUND_VERSION=1.14.0 \
-    UNBOUND_SHA256=6ef91cbf02d5299eab39328c0857393de7b4885a2fe7233ddfe3c124ff5a89c8 \
-    UNBOUND_DOWNLOAD_URL=https://nlnetlabs.nl/downloads/unbound/unbound-1.14.0.tar.gz
+    UNBOUND_VERSION=1.20.0 \
+    UNBOUND_SHA256=56b4ceed33639522000fd96775576ddf8782bb3617610715d7f1e777c5ec1dbf \
+    UNBOUND_DOWNLOAD_URL=https://nlnetlabs.nl/downloads/unbound/unbound-1.20.0.tar.gz
 
 WORKDIR /tmp/src
 
@@ -66,7 +59,7 @@ RUN build_deps="curl gcc libc-dev libevent-dev libexpat1-dev libnghttp2-dev make
     echo "${UNBOUND_SHA256} *unbound.tar.gz" | sha256sum -c - && \
     tar xzf unbound.tar.gz && \
     rm -f unbound.tar.gz && \
-    cd unbound-1.14.0 && \
+    cd unbound-${UNBOUND_VERSION} && \
     groupadd _unbound && \
     useradd -g _unbound -s /etc -d /dev/null _unbound && \
     ./configure \
@@ -81,17 +74,10 @@ RUN build_deps="curl gcc libc-dev libevent-dev libexpat1-dev libnghttp2-dev make
         --enable-tfo-client \
         --enable-event-api && \
     make install && \
-    mv /opt/unbound/etc/unbound/unbound.conf /opt/unbound/etc/unbound/unbound.conf.example && \
-    apt-get purge -y --auto-remove \
-      $build_deps && \
-    rm -rf \
-        /opt/unbound/share/man \
-        /tmp/* \
-        /var/tmp/* \
-        /var/lib/apt/lists/*
+    mv /opt/unbound/etc/unbound/unbound.conf /opt/unbound/etc/unbound/unbound.conf.example
 
 
-FROM debian:bullseye
+FROM debian:bookworm
 LABEL maintainer="Matthew Vance"
 
 ENV NAME=unbound \
@@ -122,7 +108,7 @@ RUN set -x && \
         /var/tmp/* \
         /var/lib/apt/lists/*
 
-COPY a-records.conf /opt/unbound/etc/unbound/
+COPY a-records.conf-example /opt/unbound/etc/unbound/a-records.conf
 COPY unbound.sh /
 
 RUN chmod +x /unbound.sh

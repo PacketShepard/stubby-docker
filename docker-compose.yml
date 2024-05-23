@@ -4,9 +4,13 @@ services:
     image: "mvance/stubby:latest"
     networks:
      - dns
+    volumes:
+     - ./stubby/stubby.yml:/opt/stubby/etc/stubby/stubby.yml:ro
+    environment:
+     - TZ
     restart: unless-stopped
   unbound:
-    image: "mvance/unbound:1.14.0-stubby"
+    image: "mvance/unbound:1.20.0-stubby"
     depends_on:
       - "stubby"    
     ports:
@@ -15,7 +19,9 @@ services:
     networks:
      - dns
     volumes:
-      - ./unbound/a-records.conf:/opt/unbound/etc/unbound/a-records.conf:ro
+     - ./unbound/a-records.conf:/opt/unbound/etc/unbound/a-records.conf:ro
+    environment:
+     - TZ
     restart: unless-stopped
 
 networks:

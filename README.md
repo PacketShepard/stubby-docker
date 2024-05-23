@@ -1,5 +1,7 @@
 # Unbound and Stubby Docker Images
 
+Thanks to Matthew Vance for his original work here.
+
 ## What does this do?
 
 This allows you to run Stubby without losing the performance benefits of having a local caching DNS resolver. Historically, Stubby had better DNS over TLS support than Unbound. 
@@ -12,7 +14,7 @@ To achieve this, this setup uses two containers, one running Stubby and another 
 
 `sudo docker build -t mvance/stubby:latest .`
 
-`sudo docker build -t mvance/unbound:1.13.1-stubby .`
+`sudo docker build -t mvance/unbound:1.20.0-stubby .`
 
 ### Standard usage
 
@@ -30,8 +32,8 @@ While Unbound is not a full authoritative name server, it supports resolving
 custom entries on a small, private LAN. In other words, you can use Unbound to
 resolve fake names such as your-computer.local within your LAN.
 
-To support such custom entries using this image, you need to update the provided
-[a-records.conf](https://github.com/MatthewVance/stubby-docker/blob/master/unbound/a-records.conf) file. This conf file is where you will define your custom entries for forward and reverse resolution.
+To support such custom entries using this image, you need to update and rename the provided
+[a-records.conf-example](https://github.com/PacketShepard/stubby-docker/blob/master/unbound/a-records.conf-example) file to a-records.conf. This conf file is where you will define your custom entries for forward and reverse resolution.
 
 The `a-records.conf` file should use the following format:
 
@@ -46,19 +48,19 @@ The `a-records.conf` file should use the following format:
 ```
 
 ### Use a customized Unbound configuration
-Instead of using this image's default Unbound configuration, you may supply your own unbound.conf. See my [unbound-docker README](https://github.com/MatthewVance/unbound-docker/blob/master/README.md#use-a-customized-unbound-configuration) for further details. Note, you will likely want to apply the concepts from those directions via [docker-compose.yml](https://github.com/MatthewVance/stubby-docker/blob/master/stubby/stubby.yml).
+Instead of using this image's default Unbound configuration, you may supply your own unbound.conf. See my [unbound-docker README](https://github.com/PacketShepard/unbound-docker/blob/master/README.md#use-a-customized-unbound-configuration) for further details. Note, you will likely want to apply the concepts from those directions via [docker-compose.yml](https://github.com/PacketShepard/stubby-docker/blob/master/stubby/stubby.yml).
 
 ## Issues
 
-If you have any problems with or questions about this image, please contact me through a [GitHub issue](https://github.com/MatthewVance/stubby-docker/issues).
+If you have any problems with or questions about this image, please contact me through a [GitHub issue](https://github.com/PacketShepard/stubby-docker/issues).
 
 ## Contributing
 
 You are invited to contribute new features, fixes, or updates, large or small. I imagine the upstream projects would be equally pleased to receive your contributions.
 
-Please familiarize yourself with the [repository's `README.md` file](https://github.com/MatthewVance/stubby-docker/blob/master/README.md) before attempting a pull request.
+Please familiarize yourself with the [repository's `README.md` file](https://github.com/PacketShepard/stubby-docker/blob/master/README.md) before attempting a pull request.
 
-Before you start to code, I recommend discussing your plans through a [GitHub issue](https://github.com/MatthewVance/stubby-docker/issues), especially for more ambitious contributions. This gives other contributors a chance to point you in the right direction, give you feedback on your design, and help you find out if someone else is working on the same thing.
+Before you start to code, I recommend discussing your plans through a [GitHub issue](https://github.com/PacketShepard/stubby-docker/issues), especially for more ambitious contributions. This gives other contributors a chance to point you in the right direction, give you feedback on your design, and help you find out if someone else is working on the same thing.
 
 ## Acknowledgments
 
@@ -75,7 +77,7 @@ These deserve credit for making this all possible.
 ## Licenses
 ### License
 
-Unless otherwise specified, all code is released under the MIT License (MIT). See the [repository's `LICENSE` file](https://github.com/MatthewVance/stubby-docker/blob/master/LICENSE) for details.
+Unless otherwise specified, all code is released under the MIT License (MIT). See the [repository's `LICENSE` file](https://github.com/PacketShepard/stubby-docker/blob/master/LICENSE) for details.
 
 ### Licenses for other components
 
