@@ -1,23 +1,17 @@
-FROM debian:buster as openssl
+FROM debian:bookworm as openssl
 
-ENV VERSION_OPENSSL=openssl-1.1.1k \
-    SHA256_OPENSSL=892a0875b9872acd04a9fde79b1f943075d5ea162415de3047c327df33fbaee5 \
+ENV VERSION_OPENSSL=openssl-3.0.13 \
+    SHA256_OPENSSL=88525753f79d3bec27d2fa7c66aa0b92b3aa9498dafd93d7cfa4b3780cdae313 \
     SOURCE_OPENSSL=https://www.openssl.org/source/ \
-    OPGP_OPENSSL=8657ABB260F056B1E5190839D9C4D26D0E604491
+    OPGP_OPENSSL=EFC0A467D613CB83C7ED6D30D894E2CE8B3D79F5
 
 WORKDIR /tmp/src
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN set -e -x && \
-    build_deps="build-essential ca-certificates curl dirmngr gnupg libidn2-0-dev libssl-dev" && \
+    build_deps="build-essential ca-certificates curl dirmngr gnupg libidn2-dev libssl-dev" && \
     DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        ca-certificates \
-        curl \
-        dirmngr \
-        gnupg \
-        libidn2-0-dev \
-        libssl-dev && \
+        $build_deps && \
     curl -L $SOURCE_OPENSSL$VERSION_OPENSSL.tar.gz -o openssl.tar.gz && \
     echo "${SHA256_OPENSSL} ./openssl.tar.gz" | sha256sum -c - && \
     curl -L $SOURCE_OPENSSL$VERSION_OPENSSL.tar.gz.asc -o openssl.tar.gz.asc && \
@@ -41,18 +35,15 @@ RUN set -e -x && \
         -fstack-protector-strong && \
     make depend && \
     make && \
-    make install_sw && \
-    apt-get purge -y --auto-remove \
-      $build_deps && \
-    rm -rf \
-        /tmp/* \
-        /var/tmp/* \
-        /var/lib/apt/lists/*
+    make install_sw
 
-FROM debian:buster as stubby
+FROM debian:bookworm as stubby
 LABEL maintainer="Matthew Vance"
 
-ENV VERSION_GETDNS=v1.7.0
+ENV VERSION_GETDNS=getdns-1.7.3 \
+    SHA256_GETDNS=f1404ca250f02e37a118aa00cf0ec2cbe11896e060c6d369c6761baea7d55a2c \
+    SOURCE_GETDNS=https://getdnsapi.net/dist/ \
+	OPGP_GETDNS=DC34EE5DB2417BCC151E5100E5F8F8212F77A498
 
 WORKDIR /tmp/src
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -60,17 +51,26 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY --from=openssl /opt/openssl /opt/openssl
 
 RUN set -e -x && \
-    build_deps="autoconf build-essential check cmake dh-autoreconf git libssl-dev libyaml-dev make m4" && \
+    build_deps="autoconf build-essential curl dirmngr gnupg check cmake dh-autoreconf libssl-dev libyaml-dev make m4" && \
     debian_frontend=noninteractive apt-get update && apt-get install -y --no-install-recommends \
       ${build_deps} \
       ca-certificates \
       dns-root-data \
       libyaml-0-2 && \
     debian_frontend=noninteractive apt-get update && apt-get install -y --no-install-recommends check cmake && \
-    git clone https://github.com/getdnsapi/getdns.git && \
-    cd getdns && \
-    git checkout "${VERSION_GETDNS}" && \
-    git submodule update --init && \
+    #git clone https://github.com/getdnsapi/getdns.git && \
+    #cd getdns && \
+    #git checkout "${VERSION_GETDNS}" && \
+    #git submodule update --init && \
+	curl -L $SOURCE_GETDNS$VERSION_GETDNS.tar.gz -o getdns.tar.gz && \
+    echo "${SHA256_GETDNS} ./getdns.tar.gz" | sha256sum -c - && \
+    curl -L $SOURCE_GETDNS$VERSION_GETDNS.tar.gz.asc -o getdns.tar.gz.asc && \
+    GNUPGHOME="$(mktemp -d)" && \
+    export GNUPGHOME && \
+    gpg --no-tty --keyserver keys.openpgp.org --recv-keys "$OPGP_GETDNS" && \
+    gpg --batch --verify getdns.tar.gz.asc getdns.tar.gz && \
+    tar xzf getdns.tar.gz && \
+    cd "${VERSION_GETDNS}" && \
     mkdir build && \
     cd build && \
     cmake \
@@ -78,8 +78,8 @@ RUN set -e -x && \
         -DENABLE_STUB_ONLY=ON \
         -DCMAKE_INSTALL_PREFIX=/opt/stubby \
         -DOPENSSL_INCLUDE_DIR=/opt/openssl \
-        -DOPENSSL_CRYPTO_LIBRARY=/opt/openssl/lib/libcrypto.so \
-        -DOPENSSL_SSL_LIBRARY=/opt/openssl/lib/libssl.so \
+        -DOPENSSL_CRYPTO_LIBRARY=/opt/openssl/lib64/libcrypto.so \
+        -DOPENSSL_SSL_LIBRARY=/opt/openssl/lib64/libssl.so \
         -DUSE_LIBIDN2=OFF \
         -DBUILD_LIBEV=OFF \
         -DBUILD_LIBEVENT2=OFF \
@@ -88,11 +88,11 @@ RUN set -e -x && \
     make && \
     make install
 
-FROM debian:buster
+FROM debian:bookworm
 
 COPY --from=openssl /opt/openssl /opt/openssl
 COPY --from=stubby /opt/stubby /opt/stubby
-COPY stubby.yml /opt/stubby/etc/stubby/stubby.yml
+COPY stubby.yml-example /opt/stubby/etc/stubby/stubby.yml
 
 ENV PATH /opt/stubby/bin:$PATH
 
